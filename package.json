@@ -1,0 +1,32 @@
+{
+  "name": "codex-history",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A local-first Codex CLI history reader for the browser",
+  "keywords": [],
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run type-check && vite build",
+    "type-check": "vue-tsc --noEmit",
+    "test": "node --test tests/*.test.mjs",
+    "fmt": "oxfmt",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "acorn": "^8.18.0",
+    "element-plus": "^2.14.6",
+    "sql.js": "^1.14.2",
+    "vue": "^3.5.43",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@types/sql.js": "^1.4.11",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "oxfmt": "^0.69.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.0",
+    "vue-tsc": "^3.3.11"
+  }
+}
