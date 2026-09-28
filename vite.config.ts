@@ -3,6 +3,10 @@ import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
   plugins: [vue()],
+  server: {
+    strictPort: true,
+    watch: { ignored: ["**/src-tauri/**"] },
+  },
   build: {
     target: "es2022",
   },

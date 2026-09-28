@@ -1,9 +1,11 @@
 import { reactive } from "vue";
 import { scanCodexDirectory } from "./services/codex";
+import { pickHistoryDirectory } from "./services/files";
+import type { HistoryDirectoryHandle } from "./services/files";
 import type { SessionSummary } from "./types";
 
 export const historyState = reactive({
-  rootHandle: undefined as FileSystemDirectoryHandle | undefined,
+  rootHandle: undefined as HistoryDirectoryHandle | undefined,
   rootName: "",
   sessions: [] as SessionSummary[],
   scanning: false,
@@ -11,8 +13,6 @@ export const historyState = reactive({
   sqliteFile: undefined as string | undefined,
   warnings: [] as string[],
 });
-
-export const directoryPickerSupported = "showDirectoryPicker" in window;
 
 export async function scanHistory(handle = historyState.rootHandle) {
   if (!handle) return;
@@ -32,8 +32,8 @@ export async function scanHistory(handle = historyState.rootHandle) {
 }
 
 export async function selectHistoryDirectory() {
-  if (!directoryPickerSupported) return;
-  const handle = await window.showDirectoryPicker({ id: "codex-home", mode: "read" });
+  const handle = await pickHistoryDirectory();
+  if (!handle) return;
   historyState.rootHandle = handle;
   historyState.rootName = handle.name;
   return scanHistory(handle);

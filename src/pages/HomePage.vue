@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { FolderOpened, Lock } from "@element-plus/icons-vue";
-import { ElMessage } from "element-plus";
+import { message } from "@tauri-apps/plugin-dialog";
 import { useRouter } from "vue-router";
-import { directoryPickerSupported, historyState, selectHistoryDirectory } from "../historyState";
+import { historyState, selectHistoryDirectory } from "../historyState";
 
 const router = useRouter();
 
@@ -13,51 +13,44 @@ async function selectDirectory() {
   }
   try {
     const result = await selectHistoryDirectory();
-    if (result && !result.sessions.length)
-      ElMessage.warning("没有找到 rollout 历史记录，请确认选择的是 CODEX_HOME 文件夹");
-    else if (result?.warnings.length)
-      ElMessage.warning(
+    if (!result) return;
+    if (!result.sessions.length)
+      await message("没有找到 rollout 历史记录，请确认选择的是 CODEX_HOME 文件夹", {
+        kind: "warning",
+      });
+    else if (result.warnings.length)
+      await message(
         `已读取 ${result.sessions.length} 个会话，另有 ${result.warnings.length} 个警告`,
+        { kind: "warning" },
       );
     await router.push({ name: "history" });
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") return;
-    ElMessage.error(`无法打开文件夹：${error instanceof Error ? error.message : String(error)}`);
+    await message(`无法打开文件夹：${error instanceof Error ? error.message : String(error)}`, {
+      kind: "error",
+    });
   }
 }
 </script>
 
 <template>
-  <nav class="page-nav" aria-label="主导航">
-    <router-link to="/">主页</router-link>
-    <router-link to="/history">历史记录</router-link>
-  </nav>
   <section class="hero">
     <div class="hero__copy">
       <div class="eyebrow"><span />LOCAL · PRIVATE · READ ONLY</div>
       <h1>让每一次与 Codex<br /><em>协作的脉络</em>清晰可见</h1>
       <p>
         选择本机的 CODEX_HOME
-        文件夹，在浏览器中浏览所有会话、工具调用与运行记录。文件始终留在你的设备上。
+        文件夹，在本机浏览所有会话、工具调用与运行记录。文件始终留在你的设备上。
       </p>
       <div class="hero__actions">
-        <el-button
-          type="primary"
-          size="large"
-          :icon="FolderOpened"
-          :disabled="!directoryPickerSupported"
+        <button
+          type="button"
+          class="ui-button ui-button--primary ui-button--large"
           @click="selectDirectory"
-          >{{ historyState.rootHandle ? "查看历史记录" : "选择 Codex 文件夹" }}</el-button
         >
+          <FolderOpened />{{ historyState.rootHandle ? "查看历史记录" : "选择 Codex 文件夹" }}
+        </button>
         <span><Lock />仅读取，不上传</span>
       </div>
-      <el-alert
-        v-if="!directoryPickerSupported"
-        type="warning"
-        :closable="false"
-        show-icon
-        title="当前浏览器不支持 File System Access API，请使用最新版 Chrome、Edge 或其他 Chromium 浏览器。"
-      />
     </div>
     <div class="hero__visual" aria-hidden="true">
       <div class="orbit orbit--one" />

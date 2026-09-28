@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { DocumentCopy, Search, Warning } from "@element-plus/icons-vue";
-import { ElMessage } from "element-plus";
+import { message } from "@tauri-apps/plugin-dialog";
 import { useRoute, useRouter } from "vue-router";
 import type { BlockKind, SessionDetail, SessionSummary } from "../types";
 import { loadSessionDetail } from "../services/codex";
@@ -70,7 +70,9 @@ watch(
     } catch (error) {
       if (version === loadVersion) {
         detail.value = undefined;
-        ElMessage.error(`读取会话失败：${error instanceof Error ? error.message : String(error)}`);
+        await message(`读取会话失败：${error instanceof Error ? error.message : String(error)}`, {
+          kind: "error",
+        });
       }
     } finally {
       if (version === loadVersion) loading.value = false;
@@ -102,8 +104,14 @@ const filteredBlocks = computed(() => {
 
 async function copyId() {
   if (!session.value) return;
-  await navigator.clipboard.writeText(session.value.id);
-  ElMessage.success("会话 ID 已复制");
+  try {
+    await navigator.clipboard.writeText(session.value.id);
+    await message("会话 ID 已复制", { kind: "info" });
+  } catch (error) {
+    await message(`复制会话 ID 失败：${error instanceof Error ? error.message : String(error)}`, {
+      kind: "error",
+    });
+  }
 }
 </script>
 
@@ -193,27 +201,34 @@ async function copyId() {
       </div>
 
       <div class="detail-toolbar">
-        <el-input v-model="query" clearable placeholder="在当前会话中查找">
-          <template #prefix
-            ><el-icon><Search /></el-icon
-          ></template>
-        </el-input>
-        <el-select v-if="view === 'detail'" v-model="kind" class="detail-toolbar__select">
-          <el-option
-            v-for="option in kindOptions"
-            :key="option.value"
-            :label="option.label"
-            :value="option.value"
+        <label class="ui-search">
+          <Search />
+          <input
+            v-model="query"
+            type="search"
+            placeholder="在当前会话中查找"
+            aria-label="在当前会话中查找"
           />
-        </el-select>
+        </label>
+        <select
+          v-if="view === 'detail'"
+          v-model="kind"
+          class="ui-select detail-toolbar__select"
+          aria-label="记录类型"
+        >
+          <option v-for="option in kindOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
       </div>
 
       <div v-if="view === 'detail' && detail?.malformedLines" class="detail-warning">
         <Warning />忽略了 {{ detail.malformedLines }} 行尚未写完或无法解析的 JSONL 数据
       </div>
 
-      <div v-loading="loading" class="detail-content">
-        <template v-if="filteredBlocks.length">
+      <div class="detail-content" :aria-busy="loading">
+        <p v-if="loading" class="ui-empty" role="status">正在读取会话…</p>
+        <template v-if="!loading && filteredBlocks.length">
           <HistoryBlock
             v-for="block in filteredBlocks"
             :key="block.id"
@@ -221,11 +236,18 @@ async function copyId() {
             :compact="view === 'conversation'"
           />
         </template>
-        <el-empty v-else-if="!loading" description="没有匹配的记录" :image-size="72" />
+        <p v-else-if="!loading" class="ui-empty">没有匹配的记录</p>
       </div>
     </div>
-    <el-empty v-else description="找不到该会话。请返回历史记录选择其他会话。">
-      <el-button type="primary" @click="router.push({ name: 'history' })">返回历史记录</el-button>
-    </el-empty>
+    <div v-else class="ui-empty">
+      <p>找不到该会话。请返回历史记录选择其他会话。</p>
+      <button
+        type="button"
+        class="ui-button ui-button--primary"
+        @click="router.push({ name: 'history' })"
+      >
+        返回历史记录
+      </button>
+    </div>
   </section>
 </template>

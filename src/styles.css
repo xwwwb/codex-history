@@ -21,12 +21,6 @@
   --green-soft: #dfeee7;
   --amber: #b96a2f;
   --blue: #486b9e;
-  --el-color-primary: #176b52;
-  --el-color-primary-light-3: #4f8e7b;
-  --el-color-primary-light-5: #79a99b;
-  --el-color-primary-light-7: #a9c8bf;
-  --el-color-primary-light-9: #edf5f2;
-  --el-border-radius-base: 8px;
 }
 
 * {
@@ -42,7 +36,8 @@ body {
   min-height: 100vh;
 }
 button,
-input {
+input,
+select {
   font: inherit;
 }
 button {
@@ -51,24 +46,6 @@ button {
 
 .app-shell {
   min-height: 100vh;
-}
-.page-nav {
-  position: relative;
-  z-index: 10;
-  display: flex;
-  justify-content: flex-end;
-  gap: 24px;
-  padding: 20px clamp(24px, 7vw, 112px);
-  border-bottom: 1px solid var(--line);
-}
-.page-nav a {
-  color: var(--muted);
-  font-size: 13px;
-  text-decoration: none;
-}
-.page-nav a.router-link-active {
-  color: var(--green);
-  font-weight: 700;
 }
 .directory-prompt {
   min-height: 60vh;
@@ -82,9 +59,6 @@ button {
   color: var(--muted);
   line-height: 1.7;
 }
-.directory-prompt .el-alert {
-  margin-top: 22px;
-}
 .detail-page {
   width: min(1000px, calc(100% - 48px));
   min-height: 70vh;
@@ -96,7 +70,7 @@ button {
 }
 
 .hero {
-  min-height: calc(100vh - 60px);
+  min-height: 100vh;
   padding: clamp(70px, 10vh, 126px) clamp(24px, 7vw, 112px);
   display: grid;
   grid-template-columns: minmax(420px, 0.9fr) minmax(460px, 1.1fr);
@@ -165,9 +139,6 @@ button {
 }
 .hero__actions svg {
   width: 15px;
-}
-.hero__copy .el-alert {
-  margin-top: 26px;
 }
 .hero__visual {
   min-height: 470px;
@@ -305,9 +276,6 @@ button {
   display: flex;
   gap: 8px;
 }
-.library__actions .el-button + .el-button {
-  margin-left: 0;
-}
 .stats {
   display: flex;
   border-left: 1px solid var(--line);
@@ -442,9 +410,6 @@ button {
   font-size: 11px;
   white-space: nowrap;
 }
-.session-card__date .el-icon {
-  font-size: 13px;
-}
 .session-card__summary {
   margin: 13px 0 16px 19px;
   max-width: 930px;
@@ -488,9 +453,6 @@ button {
   gap: 5px;
   color: #8a8c86;
   font-size: 10px;
-}
-.session-card__metrics .el-icon {
-  font-size: 12px;
 }
 .library-footer {
   padding: 34px 2px 10px;
@@ -605,7 +567,7 @@ button {
   min-height: 32px;
   min-width: 88px;
 }
-.detail-toolbar .el-input {
+.detail-toolbar .ui-search {
   flex: 1;
 }
 .detail-toolbar__select {
@@ -816,9 +778,6 @@ button {
   gap: 8px;
   margin: 18px 0;
 }
-.history-sidebar__actions .el-button + .el-button {
-  margin-left: 0;
-}
 .history-sidebar__filter {
   margin-top: 12px;
 }
@@ -976,16 +935,92 @@ button {
   padding-right: clamp(24px, 4vw, 56px);
 }
 
-.el-button {
+.ui-button {
+  min-height: 34px;
+  padding: 7px 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #dcddd7;
+  border-radius: 8px;
+  background: #fdfdfb;
+  color: var(--ink);
+  font-size: 12px;
   font-weight: 600;
+  cursor: pointer;
 }
-.el-button--primary {
+.ui-button:hover:not(:disabled) {
+  border-color: var(--green);
+  color: var(--green);
+}
+.ui-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.ui-button svg,
+.ui-search svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.ui-button--primary {
+  border-color: var(--green);
+  background: var(--green);
+  color: white;
   box-shadow: 0 6px 18px rgba(23, 107, 82, 0.16);
 }
-.el-input__wrapper,
-.el-select__wrapper {
-  box-shadow: 0 0 0 1px #dcddd7 inset !important;
+.ui-button--primary:hover:not(:disabled) {
+  background: var(--green-dark);
+  color: white;
+}
+.ui-button--large {
+  min-height: 44px;
+  padding: 10px 18px;
+  font-size: 14px;
+}
+.ui-search {
+  min-height: 34px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #dcddd7;
+  border-radius: 8px;
   background: #fdfdfb;
+  color: #858782;
+}
+.ui-search:focus-within {
+  border-color: var(--green);
+}
+.ui-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+}
+.ui-select {
+  padding: 0 9px;
+  border: 1px solid #dcddd7;
+  border-radius: 8px;
+  background: #fdfdfb;
+  color: var(--ink);
+  font-size: 12px;
+}
+.ui-select:focus-visible,
+.ui-button:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+.ui-empty {
+  padding: 30px 16px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
 }
 
 @media (max-width: 900px) {

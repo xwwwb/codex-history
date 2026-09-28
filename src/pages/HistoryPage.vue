@@ -2,14 +2,9 @@
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { FolderOpened, Refresh, Search } from "@element-plus/icons-vue";
-import { ElMessage } from "element-plus";
+import { message } from "@tauri-apps/plugin-dialog";
 import SessionCard from "../components/SessionCard.vue";
-import {
-  directoryPickerSupported,
-  historyState,
-  scanHistory,
-  selectHistoryDirectory,
-} from "../historyState";
+import { historyState, scanHistory, selectHistoryDirectory } from "../historyState";
 import type { SessionKind, SessionSummary } from "../types";
 
 type KindFilter = "all" | SessionKind;
@@ -31,31 +26,36 @@ const filteredSessions = computed(() => {
   });
 });
 
-function reportScan(result: Awaited<ReturnType<typeof scanHistory>>) {
+async function reportScan(result: Awaited<ReturnType<typeof scanHistory>>) {
   if (!result) return;
   if (!result.sessions.length)
-    ElMessage.warning("没有找到 rollout 历史记录，请确认选择的是 CODEX_HOME 文件夹");
+    await message("没有找到 rollout 历史记录，请确认选择的是 CODEX_HOME 文件夹", {
+      kind: "warning",
+    });
   else if (result.warnings.length)
-    ElMessage.warning(
+    await message(
       `已读取 ${result.sessions.length} 个会话，另有 ${result.warnings.length} 个警告`,
+      { kind: "warning" },
     );
 }
 
 async function selectDirectory() {
-  if (!directoryPickerSupported) return;
   try {
-    reportScan(await selectHistoryDirectory());
+    await reportScan(await selectHistoryDirectory());
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") return;
-    ElMessage.error(`无法打开文件夹：${error instanceof Error ? error.message : String(error)}`);
+    await message(`无法打开文件夹：${error instanceof Error ? error.message : String(error)}`, {
+      kind: "error",
+    });
   }
 }
 
 async function scan() {
   try {
-    reportScan(await scanHistory());
+    await reportScan(await scanHistory());
   } catch (error) {
-    ElMessage.error(`扫描失败：${error instanceof Error ? error.message : String(error)}`);
+    await message(`扫描失败：${error instanceof Error ? error.message : String(error)}`, {
+      kind: "error",
+    });
   }
 }
 
@@ -66,29 +66,17 @@ function openSession(session: SessionSummary) {
 
 <template>
   <main class="history-screen">
-    <nav class="page-nav" aria-label="主导航">
-      <router-link to="/">主页</router-link>
-      <router-link to="/history">历史记录</router-link>
-    </nav>
-
     <section v-if="!historyState.rootHandle" class="library directory-prompt">
       <h1>选择 Codex 文件夹</h1>
-      <p>浏览历史记录需要读取本机的 CODEX_HOME 文件夹。刷新页面后，浏览器需要重新授权。</p>
-      <el-button
-        type="primary"
-        :icon="FolderOpened"
-        :disabled="!directoryPickerSupported"
-        :loading="historyState.scanning"
+      <p>浏览历史记录需要读取本机的 CODEX_HOME 文件夹。重新打开应用后需要再次选择。</p>
+      <button
+        type="button"
+        class="ui-button ui-button--primary"
+        :disabled="historyState.scanning"
         @click="selectDirectory"
-        >选择 Codex 文件夹</el-button
       >
-      <el-alert
-        v-if="!directoryPickerSupported"
-        type="warning"
-        :closable="false"
-        show-icon
-        title="当前浏览器不支持 File System Access API，请使用 Chrome 或 Edge。"
-      />
+        <FolderOpened />选择 Codex 文件夹
+      </button>
     </section>
 
     <div v-else class="history-workspace">
@@ -100,21 +88,27 @@ function openSession(session: SessionSummary) {
           </h1>
           <p :title="historyState.rootName">{{ historyState.rootName }}</p>
           <div class="history-sidebar__actions">
-            <el-button :icon="Refresh" :loading="historyState.scanning" @click="scan()"
-              >重新扫描</el-button
+            <button
+              type="button"
+              class="ui-button"
+              :disabled="historyState.scanning"
+              @click="scan()"
             >
-            <el-button
-              :icon="FolderOpened"
-              :disabled="!directoryPickerSupported"
-              @click="selectDirectory"
-              >更换文件夹</el-button
-            >
+              <Refresh />重新扫描
+            </button>
+            <button type="button" class="ui-button" @click="selectDirectory">
+              <FolderOpened />更换文件夹
+            </button>
           </div>
-          <el-input v-model="query" clearable placeholder="搜索标题或路径">
-            <template #prefix
-              ><el-icon><Search /></el-icon
-            ></template>
-          </el-input>
+          <label class="ui-search">
+            <Search />
+            <input
+              v-model="query"
+              type="search"
+              placeholder="搜索标题或路径"
+              aria-label="搜索标题或路径"
+            />
+          </label>
           <div class="segmented history-sidebar__filter" role="group" aria-label="会话状态筛选">
             <button :class="{ active: kind === 'all' }" @click="kind = 'all'">全部</button>
             <button :class="{ active: kind === 'active' }" @click="kind = 'active'">活跃</button>
@@ -138,20 +132,18 @@ function openSession(session: SessionSummary) {
             :selected="route.params.id === session.id"
             @select="openSession"
           />
-          <el-empty
-            v-if="historyState.scanned && !filteredSessions.length"
-            description="没有匹配的会话"
-            :image-size="64"
-          />
+          <p v-if="historyState.scanned && !filteredSessions.length" class="ui-empty">
+            没有匹配的会话
+          </p>
         </div>
       </aside>
 
       <section class="history-detail-pane" aria-label="会话详情">
         <router-view />
         <div v-if="route.name === 'history'" class="history-detail-pane__empty">
-          <el-empty
-            :description="sessions.length ? '选择左侧会话查看详情' : '当前文件夹没有可浏览的会话'"
-          />
+          <p class="ui-empty">
+            {{ sessions.length ? "选择左侧会话查看详情" : "当前文件夹没有可浏览的会话" }}
+          </p>
         </div>
       </section>
     </div>

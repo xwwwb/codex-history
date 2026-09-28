@@ -9,12 +9,13 @@ import type {
 } from "../types";
 import { readStateThreads } from "./sqlite";
 import { summarizeToolCalls } from "./toolCalls";
+import type { HistoryDirectoryHandle, HistoryFile, HistoryFileHandle } from "./files";
 
 type JsonRecord = Record<string, unknown>;
 
 // 扫描时保存 rollout 文件句柄及其在所选目录中的相对位置。
 interface RolloutFile {
-  handle: FileSystemFileHandle;
+  handle: HistoryFileHandle;
   path: string;
   kind: SessionKind;
 }
@@ -90,7 +91,7 @@ function workspaceName(cwd: string) {
   return normalized.split(/[\\/]/).filter(Boolean).at(-1) || "未知工作区";
 }
 
-async function directory(root: FileSystemDirectoryHandle, name: string) {
+async function directory(root: HistoryDirectoryHandle, name: string) {
   try {
     return await root.getDirectoryHandle(name);
   } catch {
@@ -100,7 +101,7 @@ async function directory(root: FileSystemDirectoryHandle, name: string) {
 
 // 递归收集活跃或归档目录下的 rollout JSONL 文件。
 async function collectJsonl(
-  dir: FileSystemDirectoryHandle,
+  dir: HistoryDirectoryHandle,
   prefix: string,
   kind: SessionKind,
   output: RolloutFile[],
@@ -113,7 +114,7 @@ async function collectJsonl(
   }
 }
 
-async function readOptionalFile(root: FileSystemDirectoryHandle, name: string) {
+async function readOptionalFile(root: HistoryDirectoryHandle, name: string) {
   try {
     return await (await root.getFileHandle(name)).getFile();
   } catch {
@@ -122,7 +123,7 @@ async function readOptionalFile(root: FileSystemDirectoryHandle, name: string) {
 }
 
 // 标题索引为追加日志，同一会话以后出现的名称覆盖旧名称。
-async function readTitleIndex(root: FileSystemDirectoryHandle) {
+async function readTitleIndex(root: HistoryDirectoryHandle) {
   const result = new Map<string, string>();
   const file = await readOptionalFile(root, "session_index.jsonl");
   if (!file) return result;
@@ -136,10 +137,10 @@ async function readTitleIndex(root: FileSystemDirectoryHandle) {
 }
 
 // 大文件只解析完整的首尾行，以降低列表生成时的读取量。
-async function readEdges(file: File) {
+async function readEdges(file: HistoryFile) {
   if (file.size <= HEAD_BYTES + TAIL_BYTES) return parseLines(await file.text());
-  const head = await file.slice(0, HEAD_BYTES).text();
-  const tail = await file.slice(file.size - TAIL_BYTES).text();
+  const head = await file.readTextRange(0, HEAD_BYTES);
+  const tail = await file.readTextRange(file.size - TAIL_BYTES, file.size);
   const headSafe = head.slice(0, head.lastIndexOf("\n") + 1);
   const firstTailBreak = tail.indexOf("\n");
   const tailSafe = firstTailBreak >= 0 ? tail.slice(firstTailBreak + 1) : "";
@@ -149,7 +150,7 @@ async function readEdges(file: File) {
 // 合并 rollout、标题索引和 SQLite 元数据，生成一个列表项。
 function inspectSummary(
   source: RolloutFile,
-  file: File,
+  file: HistoryFile,
   records: JsonRecord[],
   malformed: number,
   state: StateThread | undefined,
@@ -249,7 +250,7 @@ function inspectSummary(
 
 // 扫描所选 CODEX_HOME，读取会话并按最后活动时间去重排序。
 export async function scanCodexDirectory(
-  root: FileSystemDirectoryHandle,
+  root: HistoryDirectoryHandle,
   onProgress?: (done: number, total: number) => void,
 ): Promise<ScanResult> {
   const files: RolloutFile[] = [];

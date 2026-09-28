@@ -1,6 +1,7 @@
 import initSqlJs, { type Database, type SqlValue } from "sql.js";
 import wasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import type { StateThread } from "../types";
+import type { HistoryDirectoryHandle, HistoryFileHandle } from "./files";
 
 let sqlPromise: ReturnType<typeof initSqlJs> | undefined;
 
@@ -11,8 +12,8 @@ function getSql() {
 }
 
 // 选择根目录中版本号最高的 state_*.sqlite 文件。
-async function findStateFile(root: FileSystemDirectoryHandle) {
-  const candidates: Array<{ name: string; handle: FileSystemFileHandle; version: number }> = [];
+async function findStateFile(root: HistoryDirectoryHandle) {
+  const candidates: Array<{ name: string; handle: HistoryFileHandle; version: number }> = [];
   for await (const [name, handle] of root.entries()) {
     const match = /^state_(\d+)\.sqlite$/.exec(name);
     if (handle.kind === "file" && match) {
@@ -42,8 +43,8 @@ function epoch(valueToConvert: SqlValue | undefined) {
   return new Date(millis).toISOString();
 }
 
-// 在浏览器内存中只读加载状态库，并提取 threads 表的列表元数据。
-export async function readStateThreads(root: FileSystemDirectoryHandle): Promise<{
+// 在前端内存中只读加载状态库，并提取 threads 表的列表元数据。
+export async function readStateThreads(root: HistoryDirectoryHandle): Promise<{
   threads: Map<string, StateThread>;
   fileName?: string;
 }> {

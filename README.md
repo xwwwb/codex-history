@@ -1,6 +1,6 @@
 # Codex History
 
-一个完全运行在浏览器中的 Codex CLI 历史记录阅读器。它通过 File System Access API 读取用户选择的 `CODEX_HOME`，不会上传文件，也不会修改本地历史。
+一个基于 Tauri 的本地 Codex CLI 历史记录阅读器。应用通过 Tauri 官方对话框和文件插件读取用户选择的 `CODEX_HOME`；会话解析在 Vue 前端完成，不上传或修改本地历史。
 
 主要能力：
 
@@ -12,29 +12,31 @@
 
 ## 本地运行
 
-要求 Node.js 20.19+ 或 22.12+，并使用支持 File System Access API 的最新版 Chromium 浏览器（Chrome、Edge 等）。
+安装 Node.js、Rust 和 [Tauri 2 所需的系统依赖](https://v2.tauri.app/start/prerequisites/) 后，在项目根目录运行：
 
 ```bash
 npm install
 npm run dev
 ```
 
-生产构建与本地预览：
+格式化前端和 Rust，或构建本机安装包：
 
 ```bash
+npm run fmt
 npm run build
-npm run preview
 ```
+
+Rust 只负责启动 Tauri 和注册官方文件、对话框插件；文件访问范围由目录选择对话框在本次运行中授予，关闭应用后需重新选择。
 
 项目使用 Vue 3、Vue Router、Vite 8、Element Plus 和 `sql.js`。TypeScript 固定在 6.x 兼容线，不使用尚未被当前 `vue-tsc` 完整适配的 TypeScript 7。
 
-页面使用 History 路由：`/` 是主页，`/history` 是历史记录列表，`/history/:id` 是会话详情子路由。页面切换时会保留已读取的会话；刷新后浏览器需要重新授权本地文件夹，选择后可继续查看当前详情链接。生产部署时，请将这些页面路径的请求回退到 `index.html`。
+应用使用哈希路由：`#/` 是主页，`#/history` 是历史记录列表，`#/history/:id` 是会话详情子路由。页面切换时会保留已读取的会话；重新启动后需要再次选择本地文件夹。
 
 历史记录页采用双栏布局：左侧展示标题、工作目录和活动时间，右侧显示所选会话的元信息与记录内容，并可切换“对话记录”和“详细信息”。
 
-浏览器目录选择器中应选择 Codex 的根目录，即包含 `sessions/`、`session_index.jsonl` 和 `state_*.sqlite` 的目录。默认通常为 `~/.codex`；本机也可能通过 `CODEX_HOME` 指向其他位置。
+目录选择器中应选择 Codex 的根目录，即包含 `sessions/`、`session_index.jsonl` 和 `state_*.sqlite` 的目录。默认通常为 `~/.codex`；本机也可能通过 `CODEX_HOME` 指向其他位置。
 
-> File System Access API 需要安全上下文。开发环境的 `http://localhost` 可直接使用；部署时需要 HTTPS。SQLite 主文件可能落后于仍在 WAL 中的实时写入，因此列表元数据以“尽力读取”为原则，完整对话始终以 rollout JSONL 为准。
+> SQLite 主文件可能落后于仍在 WAL 中的实时写入，因此列表元数据以“尽力读取”为原则，完整对话始终以 rollout JSONL 为准。
 
 ---
 

@@ -1,3 +1,5 @@
+import type { HistoryFileHandle } from "./services/files";
+
 export type SessionKind = "active" | "archived";
 
 // SQLite threads 表中的可选元数据，用于补充 rollout 会话信息。
@@ -38,7 +40,7 @@ export interface SessionSummary {
   toolCount: number;
   sampled: boolean;
   parseWarnings: number;
-  fileHandle: FileSystemFileHandle;
+  fileHandle: HistoryFileHandle;
 }
 
 // 将不同来源的 rollout 事件归类为详情页可筛选的块类型。
