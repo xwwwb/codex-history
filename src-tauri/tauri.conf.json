@@ -28,7 +28,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": ["icons/icon.icns"],
+    "icon": ["icons/codex-history-icon.icns", "icons/codex-history-icon.png"],
     "android": {
       "debugApplicationIdSuffix": ".debug"
     }
